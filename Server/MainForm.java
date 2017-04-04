@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 
 package server;
 
@@ -14,12 +9,20 @@ import java.util.Date;
 import java.util.Vector;
 import javax.swing.JOptionPane;
 
-/**
- *
- * @author Hunk501
- */
+
 public class MainForm extends javax.swing.JFrame {
     
+    SimpleDateFormat sdf = new SimpleDateFormat("hh:mm:ss a");
+    Thread t;
+    ServerThread serverThread;
+    /** Chat List  **/
+    public Vector socketList = new Vector();
+    public Vector clientList = new Vector();
+    /** File Sharing List **/
+    public Vector clientFileSharingUsername = new Vector();
+    public Vector clientFileSharingSocket = new Vector();
+    /** Server **/
+    ServerSocket server;
     
     /**
      * Creates new form MainForm
@@ -28,7 +31,105 @@ public class MainForm extends javax.swing.JFrame {
         initComponents();
     }
     
-  
+    
+    public void appendMessage(String msg){
+        Date date = new Date();
+        jTextArea1.append(sdf.format(date) +": "+ msg +"\n");
+        jTextArea1.setCaretPosition(jTextArea1.getText().length() - 1);
+    }
+    
+    /** Setters **/
+    public void setSocketList(Socket socket){
+        try {
+            socketList.add(socket);
+            appendMessage("[setSocketList]: Added");
+        } catch (Exception e) { appendMessage("[setSocketList]: "+ e.getMessage()); }
+    }
+    public void setClientList(String client){
+        try {
+            clientList.add(client);
+            appendMessage("[setClientList]: Added");
+        } catch (Exception e) { appendMessage("[setClientList]: "+ e.getMessage()); }
+    }
+    public void setClientFileSharingUsername(String user){
+        try {
+            clientFileSharingUsername.add(user);
+        } catch (Exception e) { }
+    }
+    
+    public void setClientFileSharingSocket(Socket soc){
+        try {
+            clientFileSharingSocket.add(soc);
+        } catch (Exception e) { }
+    }
+    
+    /** Getters
+     * 
+     * @param client
+     * @return  **/
+    public Socket getClientList(String client){
+        Socket tsoc = null;
+        for(int x=0; x < clientList.size(); x++){
+            if(clientList.get(x).equals(client)){
+                tsoc = (Socket) socketList.get(x);
+                break;
+            }
+        }
+        return tsoc;
+    }
+    
+    
+    public void removeFromTheList(String client){
+        try {
+            for(int x=0; x < clientList.size(); x++){
+                if(clientList.elementAt(x).equals(client)){
+                    clientList.removeElementAt(x);
+                    socketList.removeElementAt(x);
+                    appendMessage("[Removed]: "+ client);
+                    break;
+                }
+            }
+        } catch (Exception e) {
+            appendMessage("[RemovedException]: "+ e.getMessage());
+        }
+    }
+    
+    public Socket getClientFileSharingSocket(String username){
+        Socket tsoc = null;
+        for(int x=0; x < clientFileSharingUsername.size(); x++){
+            if(clientFileSharingUsername.elementAt(x).equals(username)){
+                tsoc = (Socket) clientFileSharingSocket.elementAt(x);
+                break;
+            }
+        }
+        return tsoc;
+    }
+    
+    
+    /*
+    Remove Client File Sharing List
+    */
+    public void removeClientFileSharing(String username){
+        for(int x=0; x < clientFileSharingUsername.size(); x++){
+            if(clientFileSharingUsername.elementAt(x).equals(username)){
+                try {
+                    Socket rSock = getClientFileSharingSocket(username);
+                    if(rSock != null){
+                        rSock.close();
+                    }
+                    clientFileSharingUsername.removeElementAt(x);
+                    clientFileSharingSocket.removeElementAt(x);
+                    appendMessage("[FileSharing]: Removed "+ username);
+                } catch (IOException e) {
+                    appendMessage("[FileSharing]: "+ e.getMessage());
+                    appendMessage("[FileSharing]: Unable to Remove "+ username);
+                }
+                break;
+            }
+        }
+    }
+    
+    
     
     /**
      * This method is called from within the constructor to initialize the form.
@@ -104,7 +205,7 @@ public class MainForm extends javax.swing.JFrame {
                     .addComponent(jButton1)
                     .addComponent(jButton2))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 230, Short.MAX_VALUE)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 250, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
@@ -113,13 +214,23 @@ public class MainForm extends javax.swing.JFrame {
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
         // TODO add your handling code here:
-  
+        int port = Integer.parseInt(jTextField1.getText());
+        serverThread = new ServerThread(port, this);
+        t = new Thread(serverThread);
+        t.start();
+        
+        new Thread(new OnlineListThread(this)).start();
+        
+        jButton1.setEnabled(false);
+        jButton2.setEnabled(true);
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
         // TODO add your handling code here:
-      
-        
+        int confirm = JOptionPane.showConfirmDialog(null, "Close Server.?");
+        if(confirm == 0){
+            serverThread.stop();
+        }
     }//GEN-LAST:event_jButton2ActionPerformed
 
     /**
@@ -131,7 +242,23 @@ public class MainForm extends javax.swing.JFrame {
         /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
          * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
          */
-     
+        try {
+            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
+            }
+        } catch (ClassNotFoundException ex) {
+            java.util.logging.Logger.getLogger(MainForm.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (InstantiationException ex) {
+            java.util.logging.Logger.getLogger(MainForm.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (IllegalAccessException ex) {
+            java.util.logging.Logger.getLogger(MainForm.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
+            java.util.logging.Logger.getLogger(MainForm.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        }
+        //</editor-fold>
 
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
