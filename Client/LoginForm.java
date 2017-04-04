@@ -8,10 +8,6 @@ package client;
 
 import javax.swing.JOptionPane;
 
-/**
- *
- * @author Hunk501
- */
 public class LoginForm extends javax.swing.JFrame {
 
     /**
@@ -40,7 +36,7 @@ public class LoginForm extends javax.swing.JFrame {
         jLabel4 = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("Chat Program");
+        setTitle("Login");
         setResizable(false);
 
         jLabel1.setText("Username:");
@@ -75,7 +71,7 @@ public class LoginForm extends javax.swing.JFrame {
         jLabel4.setFont(new java.awt.Font("SansSerif", 3, 14)); // NOI18N
         jLabel4.setText("Please login here.");
 
-
+    
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -97,7 +93,7 @@ public class LoginForm extends javax.swing.JFrame {
                             .addComponent(txtPort))))
                 .addGap(0, 0, Short.MAX_VALUE))
             .addGroup(layout.createSequentialGroup()
-                .addGap(135, 135, 135)
+                
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                 .addContainerGap(131, Short.MAX_VALUE)
@@ -123,7 +119,8 @@ public class LoginForm extends javax.swing.JFrame {
                     .addComponent(jLabel3))
                 .addGap(30, 30, 30)
                 .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
+                
+                
                 .addContainerGap(14, Short.MAX_VALUE))
         );
 
@@ -132,18 +129,39 @@ public class LoginForm extends javax.swing.JFrame {
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
         // TODO add your handling code here:
-       
+        connectToServer();
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void txtUsernameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtUsernameActionPerformed
         // TODO add your handling code here:
-        
+        connectToServer();
     }//GEN-LAST:event_txtUsernameActionPerformed
 
     
     
     /*  Connect to Server    */
-  
+    private void connectToServer(){
+        if(txtHost.getText().length() > 0 && txtPort.getText().length() > 0 && txtUsername.getText().length() > 0){
+            if(txtUsername.getText().length() <= 15){
+                /*   Clean Username  */
+                String username = txtUsername.getText();
+                String u = username.replace(" ", "_");
+                /*  Show MainForm  */
+                MainForm main = new MainForm();
+                main.initFrame(u, txtHost.getText(), Integer.parseInt(txtPort.getText()));
+                //  check if were connected
+                if(main.isConnected()){
+                    main.setLocationRelativeTo(null);
+                    main.setVisible(true);
+                    setVisible(false);
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "Username must be maximum of 15 character including [space].!", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } else {
+            JOptionPane.showMessageDialog(this, "Incomplete Form.!", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
     
     
     /**
